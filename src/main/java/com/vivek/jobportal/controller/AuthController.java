@@ -1,14 +1,13 @@
 package com.vivek.jobportal.controller;
 
+import com.vivek.jobportal.dto.AuthResponse;
 import com.vivek.jobportal.dto.LoginRequest;
+import com.vivek.jobportal.dto.RefreshTokenRequest;
 import com.vivek.jobportal.dto.RegisterRequest;
 import com.vivek.jobportal.service.AuthService;
-import com.vivek.jobportal.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -28,9 +27,19 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public  ResponseEntity<Map<String,String>> login(@RequestBody @Valid LoginRequest request){
-        String token = authService.login(request);
-        return ResponseEntity.ok(Map.of("token",token));
+    public ResponseEntity<AuthResponse> login(@RequestBody @Valid LoginRequest request){
+        return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(@RequestBody @Valid RefreshTokenRequest request) {
+        return ResponseEntity.ok(authService.refresh(request));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Map<String, String>> logout(@RequestBody @Valid RefreshTokenRequest request) {
+        authService.logout(request);
+        return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
     }
 
 

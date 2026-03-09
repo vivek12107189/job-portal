@@ -1,22 +1,32 @@
 package com.vivek.jobportal.service;
 
+import com.vivek.jobportal.config.JwtProperties;
+import com.vivek.jobportal.dto.AuthResponse;
 import com.vivek.jobportal.dto.LoginRequest;
+import com.vivek.jobportal.dto.RefreshTokenRequest;
 import com.vivek.jobportal.dto.RegisterRequest;
+import com.vivek.jobportal.entity.RefreshToken;
 import com.vivek.jobportal.entity.Role;
 import com.vivek.jobportal.entity.User;
 import com.vivek.jobportal.exception.BadRequestException;
+import com.vivek.jobportal.repository.RefreshTokenRepository;
 import com.vivek.jobportal.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final JwtProperties jwtProperties;
 
     public void register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -38,7 +48,8 @@ public class AuthService {
         userRepository.save(user);
     }
 
-    public String login(LoginRequest request) {
+    @Transactional
+    public AuthResponse login(LoginRequest request) {
 
         User user= userRepository.findByEmail(request.getEmail())
                 .orElseThrow(()->new BadRequestException("Invalid email or password"));
@@ -49,7 +60,58 @@ public class AuthService {
             throw new BadRequestException("Invalid email or password");
         }
 
-        return jwtService.generateToken(user.getEmail(),user.getRole().name());
+        String accessToken = jwtService.generateAccessToken(user.getEmail(), user.getRole().name());
+        String refreshToken = jwtService.generateRefreshToken(user.getEmail(), user.getRole().name());
+
+        saveRefreshToken(user, refreshToken);
+        refreshTokenRepository.deleteByExpiresAtBefore(LocalDateTime.now());
+
+        return new AuthResponse(accessToken, refreshToken, "Bearer", jwtProperties.expirationMs());
+    }
+
+    @Transactional
+    public AuthResponse refresh(RefreshTokenRequest request) {
+        String token = request.getRefreshToken();
+
+        if (!jwtService.validateToken(token) || !jwtService.isRefreshToken(token)) {
+            throw new BadRequestException("Invalid refresh token");
+        }
+
+        RefreshToken savedToken = refreshTokenRepository.findByToken(token)
+                .orElseThrow(() -> new BadRequestException("Refresh token not found"));
+
+        if (savedToken.isRevoked() || savedToken.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("Refresh token expired or revoked");
+        }
+
+        User user = savedToken.getUser();
+        savedToken.setRevoked(true);
+        refreshTokenRepository.save(savedToken);
+
+        String newAccessToken = jwtService.generateAccessToken(user.getEmail(), user.getRole().name());
+        String newRefreshToken = jwtService.generateRefreshToken(user.getEmail(), user.getRole().name());
+        saveRefreshToken(user, newRefreshToken);
+
+        return new AuthResponse(newAccessToken, newRefreshToken, "Bearer", jwtProperties.expirationMs());
+    }
+
+    @Transactional
+    public void logout(RefreshTokenRequest request) {
+        refreshTokenRepository.findByToken(request.getRefreshToken()).ifPresent(refreshToken -> {
+            refreshToken.setRevoked(true);
+            refreshTokenRepository.save(refreshToken);
+        });
+    }
+
+    private void saveRefreshToken(User user, String token) {
+        RefreshToken refreshToken = RefreshToken.builder()
+                .user(user)
+                .token(token)
+                .revoked(false)
+                .expiresAt(LocalDateTime.now().plusSeconds(jwtProperties.refreshExpirationMs() / 1000))
+                .build();
+
+        refreshTokenRepository.save(refreshToken);
     }
 }
 

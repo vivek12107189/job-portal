@@ -13,6 +13,10 @@ import java.util.Date;
 @Service
 public class JwtService {
 
+    private static final String TOKEN_TYPE_CLAIM = "token_type";
+    private static final String ACCESS_TOKEN_TYPE = "access";
+    private static final String REFRESH_TOKEN_TYPE = "refresh";
+
     private final JwtProperties jwtProperties;
 
     public JwtService(JwtProperties jwtProperties) {
@@ -30,6 +34,10 @@ public class JwtService {
     public String extractRole(String token){
         return getClaims(token).get("role",String.class);
 
+    }
+
+    public boolean isRefreshToken(String token) {
+        return REFRESH_TOKEN_TYPE.equals(getClaims(token).get(TOKEN_TYPE_CLAIM, String.class));
     }
 
     public boolean validateToken(String token){
@@ -51,12 +59,21 @@ public class JwtService {
 
     }
 
-    public String generateToken(String email, String role){
+    public String generateAccessToken(String email, String role){
+        return buildToken(email, role, ACCESS_TOKEN_TYPE, jwtProperties.expirationMs());
+    }
+
+    public String generateRefreshToken(String email, String role){
+        return buildToken(email, role, REFRESH_TOKEN_TYPE, jwtProperties.refreshExpirationMs());
+    }
+
+    private String buildToken(String email, String role, String tokenType, long expirationMs) {
         return Jwts.builder()
                 .subject(email)
                 .claim("role", role)
+                .claim(TOKEN_TYPE_CLAIM, tokenType)
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + jwtProperties.expirationMs()))
+                .expiration(new Date(System.currentTimeMillis() + expirationMs))
                 .signWith(getSignKey())
                 .compact();
     }

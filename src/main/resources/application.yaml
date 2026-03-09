@@ -21,6 +21,7 @@ management:
 jwt:
   secret: ${JWT_SECRET:replace-with-at-least-32-char-secret}
   expiration-ms: ${JWT_EXPIRATION_MS:3600000}
+  refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:1209600000}
 
 app:
   cors:

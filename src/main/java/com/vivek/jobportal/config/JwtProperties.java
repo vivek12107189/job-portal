@@ -9,6 +9,7 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties(prefix = "jwt")
 public record JwtProperties(
         @NotBlank String secret,
-        @Min(60000) long expirationMs
+        @Min(60000) long expirationMs,
+        @Min(60000) long refreshExpirationMs
 ) {
 }
