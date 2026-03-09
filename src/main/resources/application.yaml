@@ -1,13 +1,12 @@
 spring:
   application:
     name: job-portal
+  config:
+    import: optional:file:.env[.properties]
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
   jpa:
     open-in-view: false
-  jackson:
-    serialization:
-      write-dates-as-timestamps: false
 
 management:
   endpoints:
