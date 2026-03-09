@@ -44,6 +44,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/companies/**").hasRole("EMPLOYER")
                         .requestMatchers(HttpMethod.POST, "/api/jobs").hasRole("EMPLOYER")
                         .requestMatchers("/api/employer/**").hasRole("EMPLOYER")
