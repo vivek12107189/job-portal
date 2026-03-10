@@ -5,6 +5,7 @@ import com.vivek.jobportal.dto.CompanyResponse;
 import com.vivek.jobportal.dto.CreateCompanyRequest;
 import com.vivek.jobportal.service.CompanyService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,6 +22,7 @@ public class CompanyController {
     }
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public CompanyResponse create(
             @RequestBody @Valid CreateCompanyRequest request,
             @AuthenticationPrincipal String email

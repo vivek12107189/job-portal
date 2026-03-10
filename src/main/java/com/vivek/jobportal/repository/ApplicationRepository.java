@@ -12,4 +12,6 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
 
     List<Application> findByUserEmail(String email);
     List<Application> findByJobCompanyCreatedByEmailOrderByAppliedAtDesc(String email);
+
+    Optional<Application> findByIdAndJobCompanyCreatedByEmail(Long id, String email);
 }

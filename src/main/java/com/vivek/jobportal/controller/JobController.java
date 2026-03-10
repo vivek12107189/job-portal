@@ -1,13 +1,14 @@
 package com.vivek.jobportal.controller;
 
 import com.vivek.jobportal.dto.CreateJobRequest;
+import com.vivek.jobportal.dto.JobSearchRequest;
 import com.vivek.jobportal.dto.JobResponse;
+import com.vivek.jobportal.dto.PageResponse;
 import com.vivek.jobportal.service.JobService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/jobs")
@@ -20,6 +21,7 @@ public class JobController {
     }
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public JobResponse create(
             @RequestBody @Valid CreateJobRequest request,
             @AuthenticationPrincipal String email
@@ -28,8 +30,8 @@ public class JobController {
     }
 
     @GetMapping
-    public List<JobResponse> allJobs() {
-        return jobService.getAllJobs();
+    public PageResponse<JobResponse> allJobs(@Valid JobSearchRequest request) {
+        return jobService.searchJobs(request);
     }
 
     @GetMapping("/{id}")

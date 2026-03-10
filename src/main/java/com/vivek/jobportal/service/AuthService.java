@@ -16,7 +16,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.util.HexFormat;
 
 @Service
 @RequiredArgsConstructor
@@ -72,13 +76,14 @@ public class AuthService {
     @Transactional
     public AuthResponse refresh(RefreshTokenRequest request) {
         String token = request.getRefreshToken();
+        String tokenHash = hashToken(token);
 
         if (!jwtService.validateToken(token) || !jwtService.isRefreshToken(token)) {
             throw new BadRequestException("Invalid refresh token");
         }
 
-        RefreshToken savedToken = refreshTokenRepository.findByToken(token)
-                .orElseThrow(() -> new BadRequestException("Refresh token not found"));
+        RefreshToken savedToken = refreshTokenRepository.findByToken(tokenHash)
+                .orElseThrow(() -> new BadRequestException("Invalid refresh token"));
 
         if (savedToken.isRevoked() || savedToken.getExpiresAt().isBefore(LocalDateTime.now())) {
             throw new BadRequestException("Refresh token expired or revoked");
@@ -97,7 +102,7 @@ public class AuthService {
 
     @Transactional
     public void logout(RefreshTokenRequest request) {
-        refreshTokenRepository.findByToken(request.getRefreshToken()).ifPresent(refreshToken -> {
+        refreshTokenRepository.findByToken(hashToken(request.getRefreshToken())).ifPresent(refreshToken -> {
             refreshToken.setRevoked(true);
             refreshTokenRepository.save(refreshToken);
         });
@@ -106,12 +111,22 @@ public class AuthService {
     private void saveRefreshToken(User user, String token) {
         RefreshToken refreshToken = RefreshToken.builder()
                 .user(user)
-                .token(token)
+                .token(hashToken(token))
                 .revoked(false)
                 .expiresAt(LocalDateTime.now().plusSeconds(jwtProperties.refreshExpirationMs() / 1000))
                 .build();
 
         refreshTokenRepository.save(refreshToken);
+    }
+
+    private String hashToken(String token) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("SHA-256 algorithm is not available", ex);
+        }
     }
 }
 

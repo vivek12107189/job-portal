@@ -12,4 +12,12 @@ public record JwtProperties(
         @Min(60000) long expirationMs,
         @Min(60000) long refreshExpirationMs
 ) {
+    public JwtProperties {
+        if (secret.length() < 32) {
+            throw new IllegalArgumentException("JWT secret must be at least 32 characters long");
+        }
+        if ("replace-with-at-least-32-char-secret".equals(secret)) {
+            throw new IllegalArgumentException("JWT secret must not use the placeholder value");
+        }
+    }
 }

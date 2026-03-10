@@ -1,13 +1,12 @@
 package com.vivek.jobportal.dto;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
-public class CreateJobRequest {
+public class UpdateJobRequest {
 
     @NotBlank
     @Size(min = 3, max = 255)
@@ -21,7 +20,4 @@ public class CreateJobRequest {
 
     @DecimalMin(value = "0.0", inclusive = true)
     private Double salary;
-
-    @NotNull
-    private Long companyId;
 }

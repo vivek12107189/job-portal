@@ -1,7 +1,7 @@
 package com.vivek.jobportal.service;
 
 import com.vivek.jobportal.entity.User;
-import com.vivek.jobportal.exception.BadRequestException;
+import com.vivek.jobportal.exception.NotFoundException;
 import com.vivek.jobportal.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +16,6 @@ public class UserService {
 
     public User getByEmail(String email) {
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new BadRequestException("Invalid email or password"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
     }
 }

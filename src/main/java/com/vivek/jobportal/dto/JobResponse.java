@@ -6,6 +6,8 @@ public record JobResponse(
         String description,
         String location,
         Double salary,
-        Long companyId
+        Long companyId,
+        String companyName,
+        String createdAt
 ) {
 }

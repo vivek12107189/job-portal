@@ -8,4 +8,6 @@ import java.util.List;
 public interface CompanyRepository extends JpaRepository<Company,Long> {
 
     List<Company> findByCreatedByEmail(String email);
+
+    boolean existsByNameIgnoreCase(String name);
 }

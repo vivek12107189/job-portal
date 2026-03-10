@@ -4,9 +4,13 @@ import com.vivek.jobportal.dto.AuthResponse;
 import com.vivek.jobportal.dto.LoginRequest;
 import com.vivek.jobportal.dto.RefreshTokenRequest;
 import com.vivek.jobportal.dto.RegisterRequest;
+import com.vivek.jobportal.exception.BadRequestException;
 import com.vivek.jobportal.service.AuthService;
+import com.vivek.jobportal.service.AuthRateLimitService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,21 +22,33 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final AuthRateLimitService authRateLimitService;
 
 
     @PostMapping("/register")
     public ResponseEntity<String> register(@RequestBody @Valid RegisterRequest request) {
         authService.register(request);
-        return ResponseEntity.ok("User registered successfully");
+        return ResponseEntity.status(HttpStatus.CREATED).body("User registered successfully");
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody @Valid LoginRequest request){
-        return ResponseEntity.ok(authService.login(request));
+    public ResponseEntity<AuthResponse> login(@RequestBody @Valid LoginRequest request,
+                                              HttpServletRequest httpRequest){
+        authRateLimitService.checkLoginAllowed(request.getEmail(), httpRequest);
+        try {
+            AuthResponse response = authService.login(request);
+            authRateLimitService.resetLoginFailures(request.getEmail(), httpRequest);
+            return ResponseEntity.ok(response);
+        } catch (BadRequestException ex) {
+            authRateLimitService.recordLoginFailure(request.getEmail(), httpRequest);
+            throw ex;
+        }
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<AuthResponse> refresh(@RequestBody @Valid RefreshTokenRequest request) {
+    public ResponseEntity<AuthResponse> refresh(@RequestBody @Valid RefreshTokenRequest request,
+                                                HttpServletRequest httpRequest) {
+        authRateLimitService.consumeRefreshAttempt(httpRequest);
         return ResponseEntity.ok(authService.refresh(request));
     }
 

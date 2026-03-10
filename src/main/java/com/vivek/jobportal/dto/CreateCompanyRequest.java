@@ -1,6 +1,7 @@
 package com.vivek.jobportal.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
@@ -8,9 +9,12 @@ import lombok.Data;
 public class CreateCompanyRequest {
 
     @NotBlank
+    @Size(min = 2, max = 255)
     private String name;
 
+    @Size(max = 2000)
     private String description;
 
+    @Size(max = 255)
     private String location;
 }

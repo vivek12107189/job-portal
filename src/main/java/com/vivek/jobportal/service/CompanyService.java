@@ -3,6 +3,7 @@ package com.vivek.jobportal.service;
 import com.vivek.jobportal.dto.CompanyResponse;
 import com.vivek.jobportal.dto.CreateCompanyRequest;
 import com.vivek.jobportal.entity.Company;
+import com.vivek.jobportal.entity.Role;
 import com.vivek.jobportal.entity.User;
 import com.vivek.jobportal.exception.BadRequestException;
 import com.vivek.jobportal.repository.CompanyRepository;
@@ -28,12 +29,16 @@ public class CompanyService {
         User employer = userRepository.findByEmail(email)
                 .orElseThrow(() -> new BadRequestException("User not found"));
 
-        if (!employer.getRole().name().equals("EMPLOYER")) {
+        if (employer.getRole() != Role.EMPLOYER) {
             throw new BadRequestException("Only employers can create companies");
         }
 
+        if (companyRepository.existsByNameIgnoreCase(request.getName().trim())) {
+            throw new BadRequestException("Company name already exists");
+        }
+
         Company company = Company.builder()
-                .name(request.getName())
+                .name(request.getName().trim())
                 .description(request.getDescription())
                 .location(request.getLocation())
                 .createdBy(employer)
